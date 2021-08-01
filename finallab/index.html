@@ -1,1 +1,59 @@
+Troubleshoot an OpenShift Cluster and Applications
 
+In this review, you will enable developers to access a cluster and troubleshoot application deployments.
+
+Outcomes
+
+You should be able to:
+
+    Create a new project.
+
+    Perform a smoke test of the OpenShift cluster by creating an application using the source-to-image process.
+
+    Create applications using deployment resource.
+
+    Use the HTPasswd identity provider for managing users.
+
+    Create and manage groups.
+
+    Manage RBAC and SCC for users and groups.
+
+    Manage secrets for databases and applications.
+
+    Troubleshoot common problems.
+
+Complete the following tasks:
+
+1   As the kubeadmin user, create the review-troubleshoot project. The password for the kubeadmin user is located in the /usr/local/etc/ocp4.config file on the RHT_OCP4_KUBEADM_PASSWD line. Perform all subsequent tasks in the review-troubleshoot project.
+
+2   Perform a smoke test of the cluster to verify basic cluster functionality. Use a deployment to create an application named hello-world-nginx. The application source code is located in the hello-world-nginx subdirectory of the https://github.com/RedHatTraining/DO280-apps repository.
+Create a route for the application using any available hostname in the apps.ocp4.example.com subdomain, and then verify that the application responds to external requests.
+
+3   Configure the cluster to use an HTPasswd identity provider. The name of the identity provider is cluster-users. The identity provider reads htpasswd credentials stored in the compreview-users secret.
+Ensure that four user accounts exist: admin, leader, developer, and qa-engineer. All user accounts must use review as the password.
+Add the cluster-admin role to the admin user.
+
+4   As the admin user, create three user groups: leaders, developers, and qa.
+      Assign the leader user to the leaders group, the developer user to the developers group, and the qa-engineer user to the qa group.
+      Assign roles to each group:
+      Assign the self-provisioner role to the leaders group, which allows members to create projects. For this role to be effective, you must also remove the ability of any authenticated user to create new projects.
+      Assign the edit role to the developers group for the review-troubleshoot project only, which allows members to create and delete project resources.
+      Assign the view role to the qa group for the review-troubleshoot project only, which provides members with read access to project resources.
+
+5  As the developer user, use a deployment to create an application named mysql in the review-troubleshoot project. Use the image available at registry.redhat.io/rhel8/mysql-80:1-139. This application provides a shared database service for other project applications.
+Create a generic secret named mysql using password as the key and r3dh4t123 as the value.
+Set the MYSQL_ROOT_ environment variables from the values in the mysql secret.
+Configure the mysql database application to mount a persistent volume claim (PVC) to the /var/lib/mysql/data directory within the pod. The PVC must be 2 GB in size and must only request the ReadWriteOnce access mode. 
+
+6  As the developer user, use a deployment to create an application named wordpress. Create the application in the review-troubleshoot project. Use the image available at quay.io/redhattraining/wordpress:5.7-php7.4-apache.
+The Wordpress application requires that you set several environment variables. The required environment variables are: WORDPRESS_DB_HOST with a value of mysql, WORDPRESS_DB_NAME to have a value of wordpress, WORDPRESS_USER with a value of wpuser, WORDPRESS_PASSWORD with a value of wppass, WORDPRESS_TITLE to have a value of review-troubleshoot, WORDPRESS_URL with a value of wordpress.${RHT_OCP4_WILDCARD_DOMAIN} and WORDPRESS_EMAIL with a value of student@redhat.com.
+Set the WORDPRESS_DB_* environment variables to retrieve their values from the mysql secret.
+The wordpress application requires the anyuid security context constraint. Create a service account named wordpress-sa, and then assign the anyuid security context constraint to it. Configure the wordpress deployment to use the wordpress-sa service account.
+The wordpress application also requires that the database WORDPRESS_DB_NAME exists on the database server. Create an empty database named wordpress.
+Create a route for the application using any available hostname in the apps.ocp4.example.com subdomain. If you correctly deploy the application, then an installation wizard displays when you access the application from a browser.
+
+7   As the developer user, deploy the famous-quotes application in the review-troubleshoot project using the ~/DO280/labs/review-troubleshoot/deploy_famous-quotes.sh script. This script creates the defaultdb database and the resources defined in the ~/DO280/labs/review-troubleshoot/famous-quotes.yaml file.
+Use the mysql secret to initialize environment variables for the famous-quotes deployment with the prefix QUOTES_.
+The application pods do not initially deploy after you execute the script. The famous-quotes deployment specifies a node selector, and there are no cluster nodes with a matching node label.
+Remove the node selector from the deployment, which enables OpenShift to schedule application pods on any available node.
+Create a route for the famous-quotes application using any available hostname in the apps.ocp4.example.com subdomain, and then verify that the application responds to external requests.
